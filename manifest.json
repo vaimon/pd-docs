@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "title": "Руководство участника ПД ФИИТ",
+  "sections": [
+    {
+      "title": "Общие положения",
+      "pages": [
+        {
+          "slug": "overview",
+          "title": "Руководство участника ПД",
+          "file": "pages/overview.md"
+        },
+        {
+          "slug": "concepts",
+          "title": "О предмете",
+          "file": "pages/common-info/concepts.md"
+        },
+        {
+          "slug": "stages",
+          "title": "Этапы ПД",
+          "file": "pages/common-info/stages.md"
+        },
+        {
+          "slug": "requirements",
+          "title": "Требования к проекту",
+          "file": "pages/common-info/requirements.md"
+        }
+      ]
+    },
+    {
+      "title": "Дополнительные материалы",
+      "pages": [
+        {
+          "slug": "presentation-checklist",
+          "title": "Чек-лист для презентаций",
+          "file": "pages/extra/presentation-checklist.md"
+        },
+        {
+          "slug": "idea-bank",
+          "title": "Банк идей",
+          "file": "pages/extra/idea-bank.md"
+        },
+        {
+          "slug": "stack-ideas",
+          "title": "Предлагаемые стеки",
+          "file": "pages/extra/stack-ideas.md"
+        }
+      ]
+    }
+  ]
+}

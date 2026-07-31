@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const POSIX_PAGE_PATH = /^pages\/[a-z0-9][a-z0-9/-]*\.md$/;
+const POSIX_FAQ_PATH = /^faq\/[a-z0-9][a-z0-9/-]*\.md$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const RAW_HTML = /<\s*\/?\s*[a-z][^>]*>/i;
 const MARKDOWN_LINK = /(!?)\[[^\]]*]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
@@ -70,11 +71,116 @@ async function rejectSymbolicLinks(root, relativePath) {
   }
 }
 
+function fenceOpening(text) {
+  const match = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(text);
+  if (!match || (match[1][0] === '`' && match[2].includes('`'))) return null;
+  return { marker: match[1][0], length: match[1].length };
+}
+
+function closesFence(text, fence) {
+  const run = /^ {0,3}(`+|~+)[ \t]*$/.exec(text)?.[1];
+  return Boolean(run && run[0] === fence.marker && run.length >= fence.length);
+}
+
+function isEscaped(text, index) {
+  let backslashes = 0;
+  for (let cursor = index - 1; cursor >= 0 && text[cursor] === '\\'; cursor -= 1) {
+    backslashes += 1;
+  }
+  return backslashes % 2 === 1;
+}
+
+function maskInlineCode(text) {
+  const characters = text.split('');
+  for (let start = 0; start < text.length; start += 1) {
+    if (text[start] !== '`' || isEscaped(text, start)) continue;
+    let length = 1;
+    while (text[start + length] === '`') length += 1;
+    let end = start + length;
+    while (end < text.length) {
+      const candidate = text.indexOf('`'.repeat(length), end);
+      if (candidate === -1) break;
+      if (
+        !isEscaped(text, candidate) &&
+        text[candidate - 1] !== '`' &&
+        text[candidate + length] !== '`'
+      ) {
+        for (let index = start; index < candidate + length; index += 1) characters[index] = ' ';
+        start = candidate + length - 1;
+        break;
+      }
+      end = candidate + length;
+    }
+  }
+  return characters.join('');
+}
+
+function maskMarkdownCode(markdown) {
+  let fence;
+  let indentedCode = false;
+  let listContext = false;
+  let previousBlank = true;
+  let masked = '';
+  for (const line of markdown.matchAll(/^.*(?:\r?\n|$)/gm)) {
+    if (!line[0]) continue;
+    const newline = /\r?\n$/.exec(line[0])?.[0] ?? '';
+    const text = line[0].slice(0, line[0].length - newline.length);
+    if (fence) {
+      if (closesFence(text, fence)) fence = undefined;
+      masked += ' '.repeat(text.length) + newline;
+      continue;
+    }
+    if (indentedCode) {
+      if (!text.trim() || /^(?: {4}|\t)/.test(text)) {
+        masked += ' '.repeat(text.length) + newline;
+        previousBlank = !text.trim();
+        continue;
+      }
+      indentedCode = false;
+    }
+    const opening = fenceOpening(text);
+    if (opening) {
+      fence = opening;
+      masked += ' '.repeat(text.length) + newline;
+      continue;
+    }
+    const listItem = /^ {0,3}(?:[-+*]|\d+[.)])[ \t]+/.test(text);
+    if (listItem) listContext = true;
+    else if (text.trim() && !/^[ \t]+/.test(text)) listContext = false;
+    if (
+      previousBlank &&
+      !listContext &&
+      /^(?: {4}|\t)/.test(text) &&
+      text.trim()
+    ) {
+      indentedCode = true;
+      masked += ' '.repeat(text.length) + newline;
+      previousBlank = false;
+      continue;
+    }
+    masked += text + newline;
+    previousBlank = !text.trim();
+  }
+  return maskInlineCode(masked);
+}
+
+function isSetextTextLine(text) {
+  return Boolean(
+    text.trim() &&
+      !/^ {0,3}(?:[-+*]|\d+[.)])[ \t]+/.test(text) &&
+      !/^ {0,3}>/.test(text) &&
+      !/^ {0,3}#{1,6}(?:[ \t]+|$)/.test(text) &&
+      !/^(?: {4}|\t)/.test(text) &&
+      !/^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})$/.test(text),
+  );
+}
+
 async function validateMarkdown(markdown, pageFile, root, knownPages, errors) {
-  if (RAW_HTML.test(markdown)) errors.push(`${pageFile}: raw HTML is not allowed`);
+  const prose = maskMarkdownCode(markdown);
+  if (RAW_HTML.test(prose)) errors.push(`${pageFile}: raw HTML is not allowed`);
 
   const pageDirectory = path.dirname(path.join(root, pageFile));
-  for (const match of markdown.matchAll(MARKDOWN_LINK)) {
+  for (const match of prose.matchAll(MARKDOWN_LINK)) {
     const [, imageMarker, rawTarget] = match;
     const target = decodeURI(rawTarget.split('#')[0]);
     if (!target) continue;
@@ -117,10 +223,59 @@ async function validateMarkdown(markdown, pageFile, root, knownPages, errors) {
   }
 }
 
+function validateFaqGrammar(markdown, faqFile, errors) {
+  const headings = [];
+  let fence;
+  let previousLine = '';
+  for (const line of markdown.matchAll(/^.*(?:\r?\n|$)/gm)) {
+    if (!line[0]) continue;
+    const text = line[0].replace(/\r?\n$/, '');
+    if (fence) {
+      if (closesFence(text, fence)) fence = undefined;
+      continue;
+    }
+    const opening = fenceOpening(text);
+    if (opening) {
+      fence = opening;
+      previousLine = '';
+      continue;
+    }
+    if (/^ {0,3}(?:=+|-+)[ \t]*$/.test(text) && isSetextTextLine(previousLine)) {
+      errors.push(`${faqFile}: Setext headings are not allowed`);
+    }
+    const heading = /^ {0,3}(#{1,2})(?:[ \t]+(.*?))?[ \t]*$/.exec(text);
+    if (heading) {
+      headings.push({
+        level: heading[1].length,
+        title: (heading[2] ?? '').trim(),
+        start: line.index,
+        end: line.index + text.length,
+      });
+    }
+    previousLine = text;
+  }
+  if (headings.some((heading) => heading.level === 1)) {
+    errors.push(`${faqFile}: level-one headings are not allowed`);
+  }
+  const questions = headings.filter((heading) => heading.level === 2);
+  if (!questions.length || markdown.slice(0, questions[0]?.start ?? 0).trim()) {
+    errors.push(`${faqFile}: FAQ must start with a level-two question`);
+  }
+  for (let index = 0; index < questions.length; index += 1) {
+    const question = questions[index].title;
+    const answerStart = questions[index].end;
+    const answerEnd = questions[index + 1]?.start ?? markdown.length;
+    if (!question) errors.push(`${faqFile}: empty question`);
+    if (!markdown.slice(answerStart, answerEnd).trim()) {
+      errors.push(`${faqFile}: empty answer for "${question}"`);
+    }
+  }
+}
+
 export async function validateBundle(bundleDirectory) {
   const root = path.resolve(bundleDirectory);
   const errors = [];
-  for (const entry of ['manifest.json', 'pages', 'assets', 'scripts']) {
+  for (const entry of ['manifest.json', 'pages', 'faq', 'assets', 'scripts']) {
     await rejectSymbolicLinks(root, entry);
   }
   let source;
@@ -166,6 +321,39 @@ export async function validateBundle(bundleDirectory) {
     }
   }
 
+  const faqFiles = new Set();
+  if (manifest.faq !== undefined) {
+    if (
+      typeof manifest.faq?.title !== 'string' ||
+      !manifest.faq.title.trim() ||
+      !Array.isArray(manifest.faq.sections) ||
+      manifest.faq.sections.length === 0
+    ) {
+      errors.push('faq must contain a title and sections');
+    } else {
+      const faqSlugs = new Set();
+      for (const section of manifest.faq.sections) {
+        if (!SLUG.test(section?.slug ?? '') || faqSlugs.has(section.slug)) {
+          errors.push(`invalid or duplicate FAQ slug "${section?.slug ?? ''}"`);
+        } else faqSlugs.add(section.slug);
+        if (typeof section?.title !== 'string' || !section.title.trim()) {
+          errors.push(`FAQ section "${section?.slug ?? ''}" has no title`);
+        }
+        if (!POSIX_FAQ_PATH.test(section?.file ?? '') || section.file.includes('..')) {
+          errors.push(`invalid FAQ path "${section?.file ?? ''}"`);
+          continue;
+        }
+        if (faqFiles.has(section.file)) errors.push(`duplicate FAQ file "${section.file}"`);
+        faqFiles.add(section.file);
+        try {
+          await access(path.join(root, section.file));
+        } catch {
+          errors.push(`missing FAQ file "${section.file}"`);
+        }
+      }
+    }
+  }
+
   let actualPages = [];
   try {
     actualPages = (await markdownFiles(path.join(root, 'pages'))).map((file) => `pages/${file}`);
@@ -175,12 +363,30 @@ export async function validateBundle(bundleDirectory) {
   for (const pageFile of actualPages) {
     if (!files.has(pageFile)) errors.push(`orphan page "${pageFile}"`);
   }
+  let actualFaqFiles = [];
+  try {
+    actualFaqFiles = (await markdownFiles(path.join(root, 'faq'))).map((file) => `faq/${file}`);
+  } catch {
+    if (manifest.faq !== undefined) errors.push('faq directory is missing');
+  }
+  for (const faqFile of actualFaqFiles) {
+    if (!faqFiles.has(faqFile)) errors.push(`orphan FAQ file "${faqFile}"`);
+  }
   for (const pageFile of files) {
     try {
       const markdown = await readFile(path.join(root, pageFile), 'utf8');
       await validateMarkdown(markdown, pageFile, root, files, errors);
     } catch {
       // A precise missing-page error was already recorded above.
+    }
+  }
+  for (const faqFile of faqFiles) {
+    try {
+      const markdown = await readFile(path.join(root, faqFile), 'utf8');
+      validateFaqGrammar(markdown, faqFile, errors);
+      await validateMarkdown(markdown, faqFile, root, files, errors);
+    } catch {
+      // A precise missing-file error was already recorded above.
     }
   }
 

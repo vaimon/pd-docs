@@ -47,5 +47,25 @@
         }
       ]
     }
-  ]
+  ],
+  "faq": {
+    "title": "Частые вопросы",
+    "sections": [
+      {
+        "slug": "stages",
+        "title": "Этапы и защиты",
+        "file": "faq/stages.md"
+      },
+      {
+        "slug": "team",
+        "title": "Команда и вклад",
+        "file": "faq/team.md"
+      },
+      {
+        "slug": "grading",
+        "title": "Оценивание и обратная связь",
+        "file": "faq/grading.md"
+      }
+    ]
+  }
 }

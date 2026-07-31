@@ -111,3 +111,136 @@ test('rejects symbolic links anywhere in the public bundle', async (context) => 
     /symbolic link "pages\/linked\.md" is not allowed/,
   );
 });
+
+test('accepts an optional FAQ and validates its question grammar', async () => {
+  const root = await fixture();
+  await mkdir(path.join(root, 'faq'));
+  const manifestPath = path.join(root, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath));
+  manifest.faq = {
+    title: 'FAQ',
+    sections: [{ slug: 'stages', title: 'Stages', file: 'faq/stages.md' }],
+  };
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  await writeFile(
+    path.join(root, 'faq', 'stages.md'),
+    '## Question?\n\nAnswer with [docs](../pages/overview.md).\n\n### Details\n\n- item\n\n`<b>[inline](javascript:bad) ![remote](https://example.com/a.png)</b>`\n\n```sh\n<script>bad()</script>\n![remote](https://example.com/a.png)\n```not-a-close\n## not a question\n```\n',
+  );
+
+  await assert.doesNotReject(validateBundle(root));
+});
+
+test('rejects malformed, unsafe and orphan FAQ files', async () => {
+  const root = await fixture();
+  await mkdir(path.join(root, 'faq'));
+  const manifestPath = path.join(root, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath));
+  manifest.faq = {
+    title: 'FAQ',
+    sections: [{ slug: 'stages', title: 'Stages', file: 'faq/stages.md' }],
+  };
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  await writeFile(
+    path.join(root, 'faq', 'stages.md'),
+    '# FAQ\n\n## Empty answer\n\n## Unsafe\n\n<script>x</script>\n\n![remote](https://example.com/a.png)\n',
+  );
+  await writeFile(path.join(root, 'faq', 'orphan.md'), '## Orphan?\n\nYes.\n');
+
+  await assert.rejects(
+    validateBundle(root),
+    /orphan FAQ file.*level-one headings.*empty answer.*raw HTML.*external image/s,
+  );
+});
+
+test('rejects a bare FAQ question marker after a valid item', async () => {
+  const root = await fixture();
+  await mkdir(path.join(root, 'faq'));
+  const manifestPath = path.join(root, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath));
+  manifest.faq = {
+    title: 'FAQ',
+    sections: [{ slug: 'stages', title: 'Stages', file: 'faq/stages.md' }],
+  };
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  await writeFile(
+    path.join(root, 'faq', 'stages.md'),
+    '## Valid question?\n\nAnswer.\n\n##\n\nText.\n',
+  );
+
+  await assert.rejects(validateBundle(root), /empty question/);
+});
+
+test('rejects Setext H1 and H2 in FAQ prose', async () => {
+  for (const underline of ['===', '---']) {
+    const root = await fixture();
+    await mkdir(path.join(root, 'faq'));
+    const manifestPath = path.join(root, 'manifest.json');
+    const manifest = JSON.parse(await readFile(manifestPath));
+    manifest.faq = {
+      title: 'FAQ',
+      sections: [{ slug: 'stages', title: 'Stages', file: 'faq/stages.md' }],
+    };
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await writeFile(
+      path.join(root, 'faq', 'stages.md'),
+      `## Valid question?\n\nAnswer.\n\nSetext\n${underline}\n`,
+    );
+
+    await assert.rejects(validateBundle(root), /Setext headings are not allowed/);
+  }
+});
+
+test('accepts HTML and link syntax in top-level indented code with blank continuation', async () => {
+  const root = await fixture();
+  await writeFile(
+    path.join(root, 'pages', 'overview.md'),
+    '# Overview\n\n    <script>not markup</script>\n\n    ![remote](https://example.com/a.png) [unsafe](javascript:bad)\n',
+  );
+
+  await assert.doesNotReject(validateBundle(root));
+});
+
+test('still scans an indented list continuation as prose', async () => {
+  const root = await fixture();
+  await writeFile(
+    path.join(root, 'pages', 'overview.md'),
+    '# Overview\n\n- item\n\n    ![remote](https://example.com/a.png) [unsafe](javascript:bad)\n',
+  );
+
+  await assert.rejects(validateBundle(root), /external image.*unsafe link scheme/s);
+});
+
+test('escaped backticks do not hide unsafe prose while genuine code spans do', async () => {
+  const rejected = await fixture(
+    '# Overview\n\n\\`![remote](https://example.com/a.png) [unsafe](javascript:bad)\\`\n',
+  );
+  await assert.rejects(validateBundle(rejected), /external image.*unsafe link scheme/s);
+
+  const accepted = await fixture(
+    '# Overview\n\n\\\\`![remote](https://example.com/a.png) [unsafe](javascript:bad)\\\\`\n',
+  );
+  await assert.doesNotReject(validateBundle(accepted));
+});
+
+test('matches CommonMark ATX indentation and permits a list thematic break', async () => {
+  const root = await fixture();
+  await mkdir(path.join(root, 'faq'));
+  const manifestPath = path.join(root, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath));
+  manifest.faq = {
+    title: 'FAQ',
+    sections: [{ slug: 'stages', title: 'Stages', file: 'faq/stages.md' }],
+  };
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  await writeFile(
+    path.join(root, 'faq', 'stages.md'),
+    '  ## Indented question?\n\n- item\n---\n',
+  );
+  await assert.doesNotReject(validateBundle(root));
+
+  await writeFile(
+    path.join(root, 'faq', 'stages.md'),
+    '  # Hidden H1\n\n  ## Question?\n\nAnswer.\n',
+  );
+  await assert.rejects(validateBundle(root), /level-one headings are not allowed/);
+});

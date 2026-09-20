@@ -3,47 +3,137 @@
   "title": "Руководство участника ПД ФИИТ",
   "sections": [
     {
-      "title": "Общие положения",
+      "title": "Начать работу",
       "pages": [
         {
           "slug": "overview",
-          "title": "Руководство участника ПД",
+          "title": "С чего начать",
           "file": "pages/overview.md"
         },
         {
           "slug": "concepts",
-          "title": "О предмете",
+          "title": "Как устроена ПД",
           "file": "pages/common-info/concepts.md"
         },
         {
-          "slug": "stages",
-          "title": "Этапы ПД",
-          "file": "pages/common-info/stages.md"
+          "slug": "team-selection",
+          "title": "Как сформировать команду",
+          "file": "pages/common-info/team-selection.md"
         },
         {
-          "slug": "requirements",
-          "title": "Требования к проекту",
-          "file": "pages/common-info/requirements.md"
+          "slug": "team",
+          "title": "Команда и личный вклад",
+          "file": "pages/common-info/team.md"
+        },
+        {
+          "slug": "cabinet",
+          "title": "Личный кабинет",
+          "file": "pages/common-info/cabinet.md"
         }
       ]
     },
     {
-      "title": "Дополнительные материалы",
+      "title": "Пройти этапы",
       "pages": [
         {
+          "slug": "stages",
+          "title": "Все этапы и сроки",
+          "file": "pages/common-info/stages.md"
+        },
+        {
+          "slug": "annotation",
+          "title": "Идея и аннотация",
+          "file": "pages/stages/annotation.md"
+        },
+        {
+          "slug": "idea",
+          "title": "Защита идеи",
+          "file": "pages/stages/idea.md"
+        },
+        {
+          "slug": "zero-version",
+          "title": "Нулевая версия",
+          "file": "pages/stages/zero-version.md"
+        },
+        {
+          "slug": "pre-defense",
+          "title": "Предзащита",
+          "file": "pages/stages/pre-defense.md"
+        },
+        {
+          "slug": "final-defense",
+          "title": "Итоговая защита",
+          "file": "pages/stages/final-defense.md"
+        }
+      ]
+    },
+    {
+      "title": "Подготовить и сдать",
+      "pages": [
+        {
+          "slug": "requirements",
+          "title": "Требования к проекту",
+          "file": "pages/common-info/requirements.md"
+        },
+        {
+          "slug": "repository",
+          "title": "Репозиторий и README",
+          "file": "pages/submission/repository.md"
+        },
+        {
+          "slug": "release",
+          "title": "Сборка, релиз и сдача",
+          "file": "pages/submission/release.md"
+        },
+        {
+          "slug": "presentation",
+          "title": "Презентация и выступление",
+          "file": "pages/submission/presentation.md"
+        },
+        {
           "slug": "presentation-checklist",
-          "title": "Чек-лист для презентаций",
+          "title": "Чек-лист презентации",
           "file": "pages/extra/presentation-checklist.md"
         },
         {
-          "slug": "idea-bank",
-          "title": "Банк идей",
-          "file": "pages/extra/idea-bank.md"
+          "slug": "testing",
+          "title": "Тестирование и совместимость",
+          "file": "pages/submission/testing.md"
         },
         {
+          "slug": "resources",
+          "title": "Сторонние материалы",
+          "file": "pages/submission/resources.md"
+        }
+      ]
+    },
+    {
+      "title": "Разобраться в результатах",
+      "pages": [
+        {
+          "slug": "grading",
+          "title": "Оценивание",
+          "file": "pages/results/grading.md"
+        },
+        {
+          "slug": "feedback",
+          "title": "Замечания и спорные ситуации",
+          "file": "pages/results/feedback.md"
+        }
+      ]
+    },
+    {
+      "title": "Примеры и помощь",
+      "pages": [
+        {
           "slug": "stack-ideas",
-          "title": "Предлагаемые стеки",
+          "title": "Как выбрать технологии",
           "file": "pages/extra/stack-ideas.md"
+        },
+        {
+          "slug": "glossary",
+          "title": "Словарь терминов",
+          "file": "pages/extra/glossary.md"
         }
       ]
     }
@@ -52,18 +142,43 @@
     "title": "Частые вопросы",
     "sections": [
       {
-        "slug": "stages",
-        "title": "Этапы и защиты",
-        "file": "faq/stages.md"
-      },
-      {
         "slug": "team",
-        "title": "Команда и вклад",
+        "title": "Команды, вклад и менторы",
         "file": "faq/team.md"
       },
       {
+        "slug": "presentation",
+        "title": "Презентация и выступление",
+        "file": "faq/presentation.md"
+      },
+      {
+        "slug": "stages",
+        "title": "Этапы, сроки и сдача",
+        "file": "faq/stages.md"
+      },
+      {
+        "slug": "cabinet",
+        "title": "Личный кабинет",
+        "file": "faq/cabinet.md"
+      },
+      {
+        "slug": "repository",
+        "title": "GitHub и репозиторий",
+        "file": "faq/repository.md"
+      },
+      {
+        "slug": "project",
+        "title": "Идея и технологии",
+        "file": "faq/project.md"
+      },
+      {
+        "slug": "testing",
+        "title": "Билд и тестирование",
+        "file": "faq/testing.md"
+      },
+      {
         "slug": "grading",
-        "title": "Оценивание и обратная связь",
+        "title": "Оценки, штрафы и БРС",
         "file": "faq/grading.md"
       }
     ]

@@ -3,7 +3,7 @@
   "title": "Руководство участника ПД ФИИТ",
   "sections": [
     {
-      "title": "Начать работу",
+      "title": "Начало работы",
       "pages": [
         {
           "slug": "overview",
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "title": "Пройти этапы",
+      "title": "Этапы",
       "pages": [
         {
           "slug": "stages",
@@ -68,7 +68,7 @@
       ]
     },
     {
-      "title": "Подготовить и сдать",
+      "title": "Билд, репозиторий и презентация",
       "pages": [
         {
           "slug": "requirements",
@@ -108,17 +108,12 @@
       ]
     },
     {
-      "title": "Разобраться в результатах",
+      "title": "Оценивание и результаты",
       "pages": [
         {
           "slug": "grading",
           "title": "Оценивание",
           "file": "pages/results/grading.md"
-        },
-        {
-          "slug": "feedback",
-          "title": "Замечания и спорные ситуации",
-          "file": "pages/results/feedback.md"
         }
       ]
     },

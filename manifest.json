@@ -121,6 +121,11 @@
       "title": "Примеры и помощь",
       "pages": [
         {
+          "slug": "project-ideas",
+          "title": "Идеи проектов с ИИ",
+          "file": "pages/extra/project-ideas.md"
+        },
+        {
           "slug": "stack-ideas",
           "title": "Как выбрать технологии",
           "file": "pages/extra/stack-ideas.md"
